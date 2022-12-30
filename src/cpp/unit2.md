@@ -1,5 +1,5 @@
 ---
-title: 开始学习C++
+title: C++ Primer Plus 第二章阅读笔记 - 开始学习C++
 
 ---
 
