@@ -138,5 +138,78 @@ cin.get(c1, 10).get();
 
 ## 读取空行
 
-使用`cin.getline()`或者`cin.get()`读取到空行时，会设置一个失效位，阻塞下面所有的`cin`相关输入，此时需要用`cin.clear()`来重置失效位。
+使用`cin.get()`（`cin.getline()`不会）读取到空行时，会设置一个失效位，阻塞下面所有的`cin`相关输入，此时需要用`cin.clear()`来重置失效位。
+
+## 混合`cin`和`cin.getline()`
+
+`cin`从输入流中获取字符串后，不会清掉buffer，如果接着用`cin.getline()`，那么会得到一个空串。
+
+```c++
+char c1[30]{};
+char c2[30]{};
+
+cin >> c1;
+cin.getline(c2, 30);
+cout << "c1: " << c1 << endl;
+cout << "c2: " << c2 << endl;
+```
+
+键入`hello`后按下回车，（还没输入`c2`的值）输出为：
+
+```bash
+c1: hello
+c2: 
+```
+
+解决方法也很简单，只需将`cin >> c1;`改成`(cin >> c1).get();`（是的！`cin >> c1`也会返回一个`istream`对象出来！）
+
+
+
+# string类简介
+
+`string`类**隐藏了**字符串的`char`**数组性质**，使得我们可以像使用普通变量那样处理字符串。
+
+- 可以使用C风格字符串来初始化`string`对象：`string x = "hello";`
+- 可以使用`cin`来将键盘中的输入存储到`string`对象中：`cin >> x;`
+- 可以使用`cout`来显示`string`对象：`cout << x;`
+
+类设计使得`string`对象可以自动调整大小。譬如我们在声明`string`对象时，并没有像使用`char`数组那样，指定元素个数。
+
+## 初始化`string`
+
+既可以用C风格字符串，也可以用列表初始化。
+
+```c++
+string x1 = "Hello,";
+string x2 {"world!"};
+```
+
+## `string`对象身上的操作
+
+我们可以将一个`string`对象**赋给**另一个`string`对象，这也算是**复制**操作了。（`char`数组就不能这么玩，并且还要用`strcpy`函数）
+
+```c++
+string x1 = "Hello";
+string x2 = x1;
+```
+
+我们可以用`+`运算符将两个`string`对象合并起来。（如果是`char`数组得用`strcat`函数）
+
+```c++
+string x3 = x1 + x2;
+```
+
+我们可以用类方法`size()`来获取字符串长度。（如果是`char`数组得用`strlen`函数）
+
+```c++
+cout << x1.size();
+```
+
+## `string`类IO
+
+
+
+
+
+
 
