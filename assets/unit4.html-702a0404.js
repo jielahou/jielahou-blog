@@ -1,4 +1,4 @@
-import{_ as e,W as d,X as c,$ as i}from"./framework-11db905c.js";const n={},a=i(`<h1 id="数组" tabindex="-1"><a class="header-anchor" href="#数组" aria-hidden="true">#</a> 数组</h1><p>数组是一种数据格式，能够存储多个<strong>同类型</strong>的数值。</p><p>声明数组的通用格式：</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>typeName arrayName[arraySize];
+import{_ as e,W as d,X as i,$ as n}from"./framework-11db905c.js";const c={},a=n(`<h1 id="数组" tabindex="-1"><a class="header-anchor" href="#数组" aria-hidden="true">#</a> 数组</h1><p>数组是一种数据格式，能够存储多个<strong>同类型</strong>的数值。</p><p>声明数组的通用格式：</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>typeName arrayName[arraySize];
 </code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><h2 id="初始化数组元素" tabindex="-1"><a class="header-anchor" href="#初始化数组元素" aria-hidden="true">#</a> 初始化数组元素</h2><p>我们可以使用大括号初始化方法<strong>在声明时</strong>（且<strong>仅</strong>在声明时）将数组初始化。</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>int scores[5] = {1, 2, 3, 4, 5};
 </code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><p>不能将一个数组直接赋值给另一个数组。</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>int scores[5] = {1, 2, 3, 4, 5};
 int ranks[5] = scores;//not allowed
@@ -47,11 +47,70 @@ cout &lt;&lt; c1 &lt;&lt; endl;
 cout &lt;&lt; s1 &lt;&lt; endl;
 </code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><code>cin</code>被设计的时候，还没有<code>string</code>类呢！所以不能直接用<code>cin</code>的<code>getline()</code>方法为<code>string</code>对象赋值。</p><p>那为什么可以采用<code>cin &gt;&gt;</code>给<code>string</code>类赋值呢？这涉及到友元函数的用法！后面会谈到...</p><h2 id="其他形式的字符串字面值" tabindex="-1"><a class="header-anchor" href="#其他形式的字符串字面值" aria-hidden="true">#</a> 其他形式的字符串字面值</h2><h3 id="复习wchar-t、char16-t、char32-t" tabindex="-1"><a class="header-anchor" href="#复习wchar-t、char16-t、char32-t" aria-hidden="true">#</a> 复习<code>wchar_t</code>、<code>char16_t</code>、<code>char32_t</code></h3><p>对于这三种类型的字面值，我们使用前缀<code>L</code>、<code>u</code>、<code>U</code>来标识。</p><p>对于UTF-8字面值，可以使用前缀<code>u8</code>来标识。</p><h3 id="原始字符串" tabindex="-1"><a class="header-anchor" href="#原始字符串" aria-hidden="true">#</a> 原始字符串</h3><p>在正常的字符串字面值中，我们需要使用<code>\\</code>对很多字符进行转义，这一点也不酷。于是<strong>原始字符串</strong>出来了！它允许我们在字符串字面值内直接使用一系列符号而无需转义。</p><p>我们可以在字符串前面加上前缀<code>R</code>来表示原始字符串，使用<code>&quot;(</code>和<code>)&quot;</code>来标识字符串的开始和结束。</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>cout &lt;&lt; R&quot;(&quot; \\n Aoligei \\\\\\)&quot;;//&quot; \\n Aoligei \\\\\\
 </code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><p>如果说想在字符串中包含<code>&quot;(</code>和<code>)&quot;</code>怎么办？我们可以在<code>&quot;</code>和<code>(</code>中添加字符（对应的<code>)</code>和<code>&quot;</code>中也要添加），替换掉原本的定界符<code>&quot;(</code>和<code>)&quot;</code>，这样就能在原始字符串中包含<code>&quot;(</code>和<code>)&quot;</code>了。</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>cout &lt;&lt; R&quot;+( can accommodate&quot;( )&quot;)+&quot;;
-</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><h1 id="结构简介" tabindex="-1"><a class="header-anchor" href="#结构简介" aria-hidden="true">#</a> 结构简介</h1><p>相较于数组只能存储同一个类型的数据，一个结构可以存储多个类型的数据。</p><h2 id="在程序中使用结构" tabindex="-1"><a class="header-anchor" href="#在程序中使用结构" aria-hidden="true">#</a> 在程序中使用结构</h2><p>下面是一个声明结构的例子：</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>struct inflatable {
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><h1 id="结构简介" tabindex="-1"><a class="header-anchor" href="#结构简介" aria-hidden="true">#</a> 结构简介</h1><p>相较于数组只能存储同一个类型的数据，一个结构可以存储多个类型的数据。</p><h2 id="定义与声明" tabindex="-1"><a class="header-anchor" href="#定义与声明" aria-hidden="true">#</a> 定义与声明</h2><p>下面是一个声明结构的例子：</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>struct inflatable {
     char name[20];
     float volume;
     double price;
 };
-</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>利用结构声明新变量时，不用像C语言那样，还得在前面加个<code>struct</code>了！</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>inflatable hat;
-</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><p>可以使用成员运算符<code>.</code>来访问结构的成员：</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>hat.price = 90.8;
-</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div>`,90),o=[a];function s(r,l){return d(),c("div",null,o)}const u=e(n,[["render",s],["__file","unit4.html.vue"]]);export{u as default};
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p><code>C++</code>提倡<strong>在外部</strong>声明结构。</p><p>利用结构声明新变量时，不用像C语言那样，还得在前面加个<code>struct</code>了！</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>inflatable hat;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><h2 id="访问成员" tabindex="-1"><a class="header-anchor" href="#访问成员" aria-hidden="true">#</a> 访问成员</h2><p>可以使用成员运算符<code>.</code>来访问结构的成员：</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>hat.price = 90.8;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><h2 id="初始化结构变量" tabindex="-1"><a class="header-anchor" href="#初始化结构变量" aria-hidden="true">#</a> 初始化结构变量</h2><p>使用列表初始化：</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>inflatable hat = {&quot;Aoligei&quot;, 1.88, 29.99};
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div></div></div><p>照旧，等号可以省略，且仍然不允许缩窄转换</p><h2 id="成员可以是string类型的对象" tabindex="-1"><a class="header-anchor" href="#成员可以是string类型的对象" aria-hidden="true">#</a> 成员可以是<code>string</code>类型的对象</h2><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>struct inflatable {
+    string name;//can be string
+    float volume;
+    double price;
+};
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h2 id="结构赋值" tabindex="-1"><a class="header-anchor" href="#结构赋值" aria-hidden="true">#</a> 结构赋值</h2><p>C++中允许使用<strong>赋值运算符</strong>将结构赋给另一个<strong>同类型的</strong>结构。</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>inflatable hat = {&quot;hat&quot;, 9.9, 8.8};
+inflatable cat = hat;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div></div></div><h2 id="结构数组" tabindex="-1"><a class="header-anchor" href="#结构数组" aria-hidden="true">#</a> 结构数组</h2><p>我们也可以创建<strong>元素为结构的数组</strong>。在初始化时，我们用大括号为数组中的每个元素赋值，为每个元素赋值的时候使用结构初始化，所以看上去就是大括号里头套大括号的样子。</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>inflatable guests[2] = {
+    {&quot;Geng&quot;, 2.0, 9.9},
+    {&quot;Wang&quot;, 9.0, 2.8}
+};
+
+cout &lt;&lt; guests[0].name;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><h1 id="共用体" tabindex="-1"><a class="header-anchor" href="#共用体" aria-hidden="true">#</a> 共用体</h1><p>共用体是一种数据格式，可以从自行设计<strong>若干种类型中选择一种</strong>进行存储。</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>union num {
+    short short_val;
+    int int_val;
+    long long_val;
+};
+
+num n1;
+n1.int_val = 10;cout &lt;&lt; n1.int_val &lt;&lt; endl;
+n1.long_val = 20;cout &lt;&lt; n1.long_val &lt;&lt; endl;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>共用体最大的用途是：当某个数据项可能会从两种或两种以上的格式中选一个时，节省空间。譬如：有些商品的ID是字符串，有些商品的ID是数字，我们可以这么操作：（用一个<code>type</code>变量标志用的是哪种<code>id</code>）</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>struct good {
+    int price;
+    int type;
+    union id {
+        char id_string[20];
+        int id_int;
+    } id_val;
+};
+
+good good1 = {1, 1};
+good1.id_val.id_int = 10;
+//...
+
+if (good1.type == 0)
+    cout &lt;&lt; good1.id_val.id_string;
+else
+    cout &lt;&lt; good1.id_val.id_int;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><p>上面的代码是有一些冗余的，比如\`\`good.id_val.id_int<code>， 还得先来一个</code>id_val<code>，才能有</code>id_int\`。</p><p>我们可以使用<strong>匿名共用体</strong>来解决这个问题：</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>struct good {
+    int price;
+    int type;
+    //注意看这里的union！
+    union{
+        char id_string[20];
+        int id_int;
+    };
+};
+
+good good1;
+good1.id_int = 10;
+
+if (good1.type == 0)
+    cout &lt;&lt; good1.id_string;
+else
+    cout &lt;&lt; good1.id_int;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div><div class="line-number"></div></div></div><blockquote><p>突然发现一个很好玩的事情，那就是<code>union</code>当中不能让<code>string</code>类成为其成员。搜到的结果是：<code>c++中的union中数据成员是不允许有构造函数的</code>，现在学的少，还不太能理解。日后把这个坑给填上。</p></blockquote><h1 id="枚举" tabindex="-1"><a class="header-anchor" href="#枚举" aria-hidden="true">#</a> 枚举</h1><p>枚举是另一种<strong>定义符号常量</strong>的方法。</p><h2 id="定义与声明-1" tabindex="-1"><a class="header-anchor" href="#定义与声明-1" aria-hidden="true">#</a> 定义与声明</h2><p>同结构类似，枚举也需要先定义，再声明。</p><div class="language-c++ line-numbers-mode" data-ext="c++"><pre class="language-c++"><code>enum fruit {apple, orange, pinapple};
+fruit good;
+</code></pre><div class="line-numbers" aria-hidden="true"><div class="line-number"></div><div class="line-number"></div></div></div>`,118),s=[a];function l(o,r){return d(),i("div",null,s)}const u=e(c,[["render",l],["__file","unit4.html.vue"]]);export{u as default};
