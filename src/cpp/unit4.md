@@ -250,7 +250,9 @@ cout << R"+( can accommodate"( )")+";
 
 相较于数组只能存储同一个类型的数据，一个结构可以存储多个类型的数据。
 
-## 在程序中使用结构
+
+
+## 定义与声明
 
 下面是一个声明结构的例子：
 
@@ -262,11 +264,15 @@ struct inflatable {
 };
 ```
 
+`C++`提倡**在外部**声明结构。
+
 利用结构声明新变量时，不用像C语言那样，还得在前面加个`struct`了！
 
 ```c++
 inflatable hat;
 ```
+
+## 访问成员
 
 可以使用成员运算符`.`来访问结构的成员：
 
@@ -274,7 +280,122 @@ inflatable hat;
 hat.price = 90.8;
 ```
 
+## 初始化结构变量
 
+使用列表初始化：
 
+```c++
+inflatable hat = {"Aoligei", 1.88, 29.99};
+```
 
+照旧，等号可以省略，且仍然不允许缩窄转换
+
+## 成员可以是`string`类型的对象
+
+```c++
+struct inflatable {
+    string name;//can be string
+    float volume;
+    double price;
+};
+```
+
+## 结构赋值
+
+C++中允许使用**赋值运算符**将结构赋给另一个**同类型的**结构。
+
+```c++
+inflatable hat = {"hat", 9.9, 8.8};
+inflatable cat = hat;
+```
+
+## 结构数组
+
+我们也可以创建**元素为结构的数组**。在初始化时，我们用大括号为数组中的每个元素赋值，为每个元素赋值的时候使用结构初始化，所以看上去就是大括号里头套大括号的样子。
+
+```c++
+inflatable guests[2] = {
+    {"Geng", 2.0, 9.9},
+    {"Wang", 9.0, 2.8}
+};
+
+cout << guests[0].name;
+```
+
+# 共用体
+
+共用体是一种数据格式，可以从自行设计**若干种类型中选择一种**进行存储。
+
+```c++
+union num {
+    short short_val;
+    int int_val;
+    long long_val;
+};
+
+num n1;
+n1.int_val = 10;cout << n1.int_val << endl;
+n1.long_val = 20;cout << n1.long_val << endl;
+```
+
+共用体最大的用途是：当某个数据项可能会从两种或两种以上的格式中选一个时，节省空间。譬如：有些商品的ID是字符串，有些商品的ID是数字，我们可以这么操作：（用一个`type`变量标志用的是哪种`id`）
+
+```c++
+struct good {
+    int price;
+    int type;
+    union id {
+        char id_string[20];
+        int id_int;
+    } id_val;
+};
+
+good good1 = {1, 1};
+good1.id_val.id_int = 10;
+//...
+
+if (good1.type == 0)
+    cout << good1.id_val.id_string;
+else
+    cout << good1.id_val.id_int;
+```
+
+上面的代码是有一些冗余的，比如``good.id_val.id_int`， 还得先来一个`id_val`，才能有`id_int`。
+
+我们可以使用**匿名共用体**来解决这个问题：
+
+```c++
+struct good {
+    int price;
+    int type;
+    //注意看这里的union！
+    union{
+        char id_string[20];
+        int id_int;
+    };
+};
+
+good good1;
+good1.id_int = 10;
+
+if (good1.type == 0)
+    cout << good1.id_string;
+else
+    cout << good1.id_int;
+```
+
+> 突然发现一个很好玩的事情，那就是`union`当中不能让`string`类成为其成员。搜到的结果是：`c++中的union中数据成员是不允许有构造函数的`，现在学的少，还不太能理解。日后把这个坑给填上。
+
+# 枚举
+
+枚举是另一种**定义符号常量**的方法。
+
+## 定义与声明
+
+同结构类似，枚举也需要先定义，再声明。
+
+```c++
+enum fruit {apple, orange, pinapple};
+fruit good;
+```
 
