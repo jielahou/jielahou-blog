@@ -1,0 +1,1 @@
+import{_ as e,W as t,X as n,Y as _}from"./framework-33bc0f2f.js";const c={},o=_("p",null,"目前还是空哒~",-1),s=[o];function l(r,a){return t(),n("div",null,s)}const d=e(c,[["render",l],["__file","link.html.vue"]]);export{d as default};
