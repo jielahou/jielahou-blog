@@ -1,5 +1,5 @@
 ---
-title: title: C++ Primer Plus 第四点五章阅读笔记 - 指针和自由存储空间
+title: C++ Primer Plus 第四点五章阅读笔记 - 指针和自由存储空间
 ---
 
 # 指针与C++基本原理
