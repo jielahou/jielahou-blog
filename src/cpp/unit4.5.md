@@ -182,3 +182,72 @@ cout << tell + 1 << endl;//0x7ffd8ab62de4
 int (*pointer)[20] = &tell;//如果没有括号，pointer先和[20]结合，pointer实际上变成了存储20个(int *)类型的数组
 ```
 
+# 指针和字符串
+
+::: info
+
+请注意，我们这里说的字符串，是C风格的字符串，亦即使用`char`数组表示的字符串。
+
+:::
+
+## 字符串字面值的本质
+
+```cpp
+char flower[10] = "rose";
+cout << flower << "s are red";
+```
+
+我们知道，`flower`是指向`"rose"`字符串中字符`'r'`的地址，将该地址传给`cout`，`cout`可以从该地址打印字符，直到遇见`'\0'`为止。
+
+由此我们猜测：后面的`"s are red"`应该也是一个地址，事实确实如此。在`cout`和大多数C++表达式中，用**引号括起的字符串常量**都被解释为**字符串第一个字符的地址**。
+
+既然用引号括起的字符串常量都被解释为字符串第一个字符的地址，那么我们便可以声明一个指针，指向字符串常量中的第一个字符。
+
+```cpp
+char * test = "Aoligei!";//not good, ISO C++11 does not allow conversion from string literal to 'char *'
+const char * test = "Aoligei";//valid
+```
+
+我们发现，如果不加`const`，会报Warning。这是因为字符串字面值是常量，如此声明`const`指针意味着我们不能修改这个字符串。（`const`指针在第七章会介绍）
+
+## 字符串字面值的存储
+
+- 字符串**字面值**通常会存储到内存的只读部分，如果动这块内存程序可能会蹦（`segmentation fault`叻！）
+
+- 有些编译器只是用字符串字面值的一个副本来表示程序中所有的该字面值。譬如我在某处写了个字面值`"jielahou"`，在另一个地方又写了一个`"jielahou"`，那他们指向的地址有可能是相同的。动了一个地方，另一个也跟着动（虽然我们可能不希望另一个动）。
+
+## 输出字符串的地址
+
+```cpp
+const char * name = "Jielahou";
+cout << name << endl;
+
+int * age = new int;
+cout << age << endl;
+```
+
+`name`和`age`都是指针，由于`cout`特性，第一处给`cout`传了`char *`类型变量，输出字符串字面值，第二处给`cout`传了`int *`类型变量，输出指针的十六进制值。
+
+问题是：我想使用`cout`输出`name`实际指向的地址，怎么操作？
+
+我们可以使用类型强转，转成另一个类型的指针类型就可以了。
+
+```cpp
+const char * name = "Jielahou";
+cout << (int*)name << endl;
+```
+
+## `strcpy`和`strncpy`的注意事项
+
+`strcpy`不管另一个地方的开的空间够不够，只会将数据从一个地方搬到另一个地方，有可能会覆盖掉不该修改的数据段。
+
+`strncpy`虽然可以指定最多复制的字符个数，但是如果被赋值的字符串字符个数超了限定，在复制够足够的字符后，不会主动补上`'\0'`，要我们手动操作。
+
+```cpp
+char name[] = "Hello!";
+char * ps = new char[strlen(name) + 1];
+strncpy(ps, name, 6);
+ps[6] = '\0';
+cout << ps;
+```
+
