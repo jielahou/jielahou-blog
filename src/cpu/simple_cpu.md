@@ -245,11 +245,22 @@ assign data_ram_en = inst_lw | inst_sw;
 //很清晰吧！
 ```
 
-书上没有给多位控制信号的例子，我想或许可以用移位写？
+~~书上没有给多位控制信号的例子，我想或许可以用移位写？~~
+
+如果有多位控制信号、且采用独热码，可以将每一位看成是1位的控制信号，针对每一位进行操作：
 
 ```verilog
-assign alu_op = (12'h001 & {12{(inst_addu | inst_addiu | inst_lw | inst_sw | inst_jal)}}) |
-    (12'h002 & {12{inst_subu}}) |
-    //...
+assign alu_op[ 0] = inst_addu | inst_addiu | inst_lw | inst_sw | inst_jal;
+assign alu_op[ 1] = inst_subu;
+assign alu_op[ 2] = inst_slt;
+assign alu_op[ 3] = inst_sltu;
+assign alu_op[ 4] = inst_and;
+assign alu_op[ 5] = inst_nor;
+assign alu_op[ 6] = inst_or;
+assign alu_op[ 7] = inst_xor;
+assign alu_op[ 8] = inst_sll;
+assign alu_op[ 9] = inst_srl;
+assign alu_op[10] = inst_sra;
+assign alu_op[11] = inst_lui;
 ```
 
