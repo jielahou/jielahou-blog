@@ -97,7 +97,7 @@ LPI(Low Pin Interface)是一个通用的接口规范，可以理解ULPI为LPI的
 
 **nxt**和**stp**可能会在**同一个上升沿**被拉高。
 
-![lpi_transfer_data](C:\jielahou.github.io\src\other\utmi_ulpi_img\lpi_transfer_data.png)
+![lpi_transfer_data](./utmi_ulpi_img/lpi_transfer_data.png)
 
 ### 终止数据
 
@@ -291,5 +291,5 @@ completes, then there is the possibility that the last data still pending in the
 
 USB3500实现了最高一层，即UTMI+ level 3。
 
-![utmi_plus_levels](C:\jielahou.github.io\src\other\utmi_ulpi_img\utmi_plus_levels.png)
+![utmi_plus_levels](./utmi_ulpi_img/utmi_plus_levels.png)
 
