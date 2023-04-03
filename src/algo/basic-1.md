@@ -48,7 +48,7 @@ title: 基础算法（1）
 
 #### 模板
 
-```c++
+```cpp
 void quick_sort(int q[], int l, int r){
     //首先判断是否还需要排序
     if(l >= r) return;
@@ -163,7 +163,7 @@ void quick_sort(int q[], int l, int r){
 
 ## 模板
 
-```c++
+```cpp
 void merge_sort(int q[], int l, int r)
 {
     //判断是否还有元素要处理
@@ -255,7 +255,7 @@ l                   k k+1                               r
 - 我们先写`int mid = l + r >> 1`
 - 在确定是`l = mid` OR `r = mid`后再根据情况回去修改`mid`
 
-```c++
+```cpp
 bool check(int x) {/* ... */} // 检查x是否满足某种性质
 
 // 区间[l, r]被划分成[l, mid]和[mid + 1, r]时使用：
@@ -301,7 +301,7 @@ int bsearch_2(int l, int r)
 - 如果题目要求6位小数，则`r - l > 1e-8`才行。也就是说，假如`n`是要求的精度，那么`r - l`要小于$10^{-(n+2)}$才可以
 - 关于边界的选取：假设要解`0.01`的根，如果区间选在`[0, 0.01]`（即`l=0;r=x`），此时发现根`0.1`是不在区间内部的，这会造成出来的结果不对（事实上会返回`0.01`）！于是做出了改进：让右边界为`r=x+1`便可解决这里的问题。
 
-```c++
+```cpp
 #include <iostream>
 using namespace std;
 
@@ -337,5 +337,145 @@ Java有大整数类，Python的精度够，只有C++会考虑。主要有以下�
 
 > 例如：对于数字`123456789`，将其每一位存到数组中后，是这样的：`q[0] == 9`、`q[1] == 8`、...etc。
 
-这么做的好处是：如果最高位涉及到进位，我们需要在最高位前面再添一个数字时，可以直接在数组的末尾添上；如果采取高位放在数组开头的做法，进位时在数组最前面不太方便添数字。
+这么做的好处是：如果最高位涉及到**进位**，我们需要在最高位前面再添一个数字时，可以直接在数组的末尾添上；如果采取高位放在数组开头的做法，进位时在数组最前面不太方便添数字。
+
+## 大整数的计算
+
+### 大整数加大整数
+
+#### 基本思想
+
+```
+  1  2  3
++    8  9
+ (1)(1)
+--------  (1)表示进位
+  2  1  2
+```
+
+过程：在算每一位的时候，本质是三个数字相加：$A_i+B_i+C$，其中$C$是进位，可取0，可取1。
+
+#### 模板
+
+个人认为重要的细节有：
+
+- 使用`string`读入大数字，并通过`a[i] - '0'`的方式获取每一位数字是啥
+- `push_back`的运用：之前把`push_back`想的太太太复杂了，其实很简单：就是在数组最后面添加一个数字。
+
+```c++
+#include <iostream>
+#include <vector> //使用vector容器，自带size()
+
+using namespace std;
+const int N = 1e6+10; //好像下面用不到？
+
+vector<int> add(vector<int> &A, vector<int> &B){ //不加&完全可以，如果不加，则会把A、B复制一份，比较浪费空间、时间
+    vector<int> C; //结果数组
+    
+    int t=0; //表示进位
+    for(int i=0; i<A.size() || i<B.size(); i++){
+        if(i < A.size()) t += A[i];
+        if(i < B.size()) t += B[i];
+        
+        C.push_back(t % 10);
+        t /= 10; //是否进位
+    }
+    
+    if(t) C.push_back(1); //判断最高位是否有进位
+    return C;
+}
+
+int main(){
+    string a, b; //因为a,b都是很长很长的数字，用int存不下的，只能用string来存
+    vector<int> A, B;
+    
+    cin >> a >> b; //a="123456"
+    for(int i=a.size() - 1; i>=0; i--) A.push_back(a[i] - '0');//倒序插数字，A = [6, 5, 4, 3, 2, 1]；要是我可能会用atoi，没想到对于单个数字，与'0'做差便是结果
+    for(int i=b.size() - 1; i>=0; i--) B.push_back(b[i] - '0');
+    
+    auto C = add(A, B);//注意auto的使用，更短
+    for(int i=C.size() - 1; i>=0; i--) printf("%d", C[i]);
+    return 0;
+}
+```
+
+### 大整数减大整数
+
+#### 基本思想
+
+```
+ (1)(1)
+  1  2  3
++    8  9
+--------  (1)表示借位
+     8  4
+```
+
+大整数减法分两步走（以$A-B$为例）：
+
+1. 如果$A < B$，那么转换为计算$-(B-A)$；
+
+2. 如果$A \geqslant B$，那么对于每一位$A_i、B_i$和借位$t$而言：
+
+   1. 如果$A_i-B_i-t {\color{red} \geqslant} 0$，那么结果位为$A_i-B_i-t$；
+   2. 如果$A_i-B_i-t {\color{red} <} 0$，那么结果位为$(A_i {\color{red}+10} -B_i-t) \space \mathrm{mod} \space 10$，且考虑向高位借位
+
+   值得注意的是，以上两种情况结果位可以合并成一种情况：$(A_i {\color{red}+10} -B_i-t) \space \mathrm{mod} \space 10$
+
+我们这里的$A、B$都是数组，所以要单独实现判断*A*、*B*大小（$A \overset{?}{\geqslant} B$）的逻辑。
+
+1. 如果$A、B$的**位数不同**，那么返回`A.size() > B.size()`（谁位数长，谁更大）；
+2. 如果$A、B$的**位数相同**，那么从高位开始，依次比较每一位，直至遇到某位`A[i]`、`B[i]`不同，返回`A[i] > B[i]`。
+
+### 模板
+
+```cpp
+//判断A是不是大于等于B
+bool cmp(vector<int> &A, vector<int> &B){
+    if(A.size() != B.size()) return A.size() > B.size();//谁位数长，谁更大
+    //对于长度相等的情况...
+    for(int i=A.size()-1;i>=0;i--){ //从高位开始对比
+        if(A[i] != B[i]) return A[i] > B[i];
+    }
+    return true;//如果相等，返回true，毕竟返回结果是大于等于么
+}
+
+
+vector<int> sub(vector<int> &A, vector<int> &B){
+    vector<int> C;
+    for(int i=0, t=0; i<A.size(); i++){
+        t = A[i] - t;
+        if(i < B.size()) t -= B[i];
+        C.push_back((t+10)%10);
+        if(t < 0) t=1;else t=0;
+    }
+    //最后还要记得去掉前导0呀
+    while(C.size()>1 && C.back() == 0) C.pop_back(); //C.size()>1保证了当A=B，结果为0时，还能剩1个0
+    
+    return C;
+}
+
+int main(){
+    string a, b; //因为a,b都是很长很长的数字，用int存不下的，只能用string来存
+    vector<int> A, B;
+    
+    cin >> a >> b; //a="123456"
+    for(int i=a.size() - 1; i>=0; i--) A.push_back(a[i] - '0');//倒序插数字，A = [6, 5, 4, 3, 2, 1]；要是我可能会用atoi，没想到对于单个数字，与'0'做差便是结果
+    for(int i=b.size() - 1; i>=0; i--) B.push_back(b[i] - '0');
+    
+    if(cmp(A, B)){
+        auto C = sub(A, B);//注意auto的使用，更短
+        for(int i=C.size() - 1; i>=0; i--) printf("%d", C[i]);
+    }else{
+        auto C = sub(B, A);//注意auto的使用，更短
+        printf("-");//单独打一个负号
+        for(int i=C.size() - 1; i>=0; i--) printf("%d", C[i]);
+    }
+    
+    
+    return 0;
+}
+```
+
+
 

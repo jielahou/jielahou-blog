@@ -26,9 +26,17 @@ RELOP ">"|"<"|">="|"<="|"=="|"!="
 
 **出错位置在报错行前一行找！**譬如某行报`unrecognized rule`，去找对应行的规则，重点关注对应行的规则上一行。
 
+看群里说如果自定义了`yyerror`，需要加外部声明`extern xxx`不然会报`warning`
+
+在Bison源代码中用`%union`和`%type<>`声明完类型后，我们就可以在Flex源代码中赋值。注意：此时不能直接是`yylval=xxx`，而应该是`yylval.type_name=xxxx`！！
+
+需要为空白符号专门设置规则！不然会报错的...
+
 ## Bison
 
-暂无
+需要在Bison（而不是Flex）的源文件开头添加`%locations`以使用`yylloc`等变量！
+
+关于`-`的优先级处理：`-`既可以是减号，也可以是取负，优先级和结合性都不一样。
 
 
 
@@ -480,6 +488,8 @@ typedef struct YYLTYPE {
 
 除此之外，最后还要在发现了换行符之后对变量`yycolumn`进行复位。
 
+> 注意：**bison的源文件开头**一定要加上`%locations`
+
 ```c
 %locations
 …
@@ -497,3 +507,154 @@ int yycolumn = 1;
 %%
 ```
 
+## 错误恢复
+
+> 突然想到一个很好玩的事情，既然每行只会出现一个错误，为什么不把换行符当作兜底符号呢（笑）
+
+为啥要错误恢复？关键在于“**恢复**”二字。将导致错误的词法成分算到某个语法成分里，使语法分析能够正常的分析下去，这才是错误恢复的目的，也是我们下面插`error`的目的。
+
+> 请牢记：语法分析的终结符是词法单元，如果语法分析出错了，说明是当前的词法单元不对，而不是输入串中的最前面的字符不对！
+
+由于本实验要识别具体的Type B类型，所以还要了解Bison错误恢复的机制。
+
+课程上我们说“恐慌模式”错误恢复的本质是**跳过出错的语法成分**，**继续分析**该**出错部分之后的字符**。`error`符号便是代表了**出错的语法成分**。产生式中`error`后面的语法成分决定了**出错部分之后的字符**（`error`后面的语法成分的`FIRST`集合）。
+
+譬如`int a[5,,,3]`，使用产生式`VarDec -> VarDec LB INT RB;`，有规约过程：
+
+```
+VarDec => VarDec LB INT RB
+       => VarDec LB INT RB LB INT RB
+                        ^^
+```
+
+相当于是当前栈中已有`VarDec LB INT[栈顶]`，下面期待来一个`RB`，没想到来一个`COMMA`，在分析表找不到对应的规则，于是报错。
+
+假设有产生式`VarDec -> VarDec LB INT error RB;`，那么`INT`便是一个可移入`ERROR`的状态。接着便会抛弃输入符号中的`,,,`直到遇到`RB`为止，`a[5,,,3]`最终被规约为了`VarDec`，继续后续的分析。
+
+>  简而言之，发生错误时，将`error`放在输入串的开头，不断地弹出状态/符号栈，看谁后面能移入`error`，移入`error`后，便开始丢弃输入串中字符，直至能有字符能跟在`error`后面为止。
+
+那么带有`error`的产生式的动作怎么写？
+
+首先应调用`yyerror`输出带有`error`的产生式的对应错误成分。
+
+最后调用`yyerrok;`，这是因为：我们知道在`error`之后能成功移入三个符号，才继续正常的语法分析；但像这个产生式`VarDec -> VarDec LB INT error RB;`，我们期望当成功移入`RB`这**一个符号**就可以继续进行语法分析的话，此时要使用`yyerrok;`来“说明”这个情况。
+
+例如：
+
+```bison
+VarDec : VarDec error {yyerror("Missing \"]\"");yyerrok;} ;
+```
+
+按照上面的思路，加了`error`后，却没有输出我们指定的错误信息，此时应该考虑：出错涉及的产生式是不是还没有加入`error`。譬如我们上面举的例子`int a[5,,,3]`，会对应到`VarDec`这个产生式。但是对于`a[5,,,3] = 3;`，如果要识别它识别缺少`]`的情况，我们还要对`Exp->Exp RB Exp LB`这个产生式添加`error`才行。
+
+> 别问我怎么知道的，问就是开Debug看自动机是怎么运转的
+
+那么在实验当中要考虑哪些潜在的语法错误呢？
+
+毕竟`error`代表的是会出错的语法单元。不妨**先看看哪些语法单元会出错**吧！处理以这个语法单元为左部的产生式后，就不用在顶层担心这个语法单元会出错了。有一种**自底向上**的感觉啊！
+
+- 括号的匹配：包括不限于`[ ]`、`( )`、`{ }`
+- 结束符：`;`
+- 表达式：对`Exp -> xxx`一系列式子进行处理后，就没必要在上层有`Exp`的地方进行处理了。
+- `xxxList`不用考虑，如果`xxxList`出问题，肯定是`xxx`出问题了。
+
+实验过程中出现了以下问题：
+
+问题一：加入`error`式后，产生了移入-规约冲突；譬如：
+
+```
+ExtDef : Specifier ExtDecList error {yyerror("Missing \";\".");yyerrok;}
+  | Specifier error {yyerror("Missing \";\".");yyerrok;}
+  ;
+```
+
+乍一看没啥问题，但是，`ExtDecList`也是会导出`error`的唷！
+
+```
+ExtDecList : VarDec;
+VarDec : VarDec error;
+```
+
+截取自动机的状态看一看
+
+```
+State 18
+
+   10 ExtDecList: VarDec • //重点在这一行
+   11           | VarDec • COMMA ExtDecList
+   20 VarDec: VarDec • LB INT RB
+   21       | VarDec • LB error RB
+   22       | VarDec • error  //重点在这一行
+
+    error  shift, and go to state 24
+    COMMA  shift, and go to state 25
+    LB     shift, and go to state 26
+
+    error  [reduce using rule 10 (ExtDecList)]
+    SEMI   reduce using rule 10 (ExtDecList)
+ 
+ rule 10: ExtDecList: VarDec
+              | VarDec COMMA ExtDecList
+```
+
+一个活前缀可能对应着不同产生式的不同的识别状态。譬如对于活前缀`VarDec ·`，可以是`ExtDecList: VarDec •`，也可以是`VarDec: VarDec • error`。如果是在`VarDec`后面出现了错，即跟在`VarDec`后面的语法单元和当前状态在分析表中没有对应条目时，可能会“弹出规则”，将`VarDec`还原成`ExtDecList`，也可能会根据`VarDec: VarDec • error`，移入`error`。
+
+
+
+问题二：是`error SEMI`更好，还是单纯的`error`更好？
+
+譬如：
+
+```
+Specifier ExtDecList SEMI {$$ = createNode("ExtDef", Others, NULL, @$.first_line, $1, NULL); $1->nextsibling=$2; $2->nextsibling=$3;}
+①: Specifier ExtDecList error SEMI {yyerror("Missing \";\".");yyerrok;}
+②: Specifier ExtDecList error {yyerror("Missing \";\".");yyerrok;}
+```
+
+我个人认为不加`SEMI`有助于更快的恢复。因为你本来就是缺分号，如果用①的话却还希望找到分号，势必会丢掉更多的输入单元。（输入文件中可能包含一个或者多个错误（**但输入文件的同一 行中保证不出现多个错误**），如果丢符号丢到下一行那就寄了）但我的这个观点好像和指导书有冲突...
+
+出现语法错误的根源是词法单元串不匹配。个人感觉应该放在底层的产生式中，即词法单元旁边为妙。
+
+两个都上行不行呢？答案是不行。譬如：
+
+```
+State 119
+
+   71 Exp: ID LP Args error • RP
+   72    | ID LP Args error •
+
+    RP  shift, and go to state 126
+
+    RP        [reduce using rule 72 (Exp)]
+    $default  reduce using rule 72 (Exp)
+```
+
+
+
+
+
+如果`error`在产生式中间，很好理解。**如果`error`在一个产生式的开头**，会意味着什么呢？或者说`error`可以处在一个产生式的开头吗？应该是可以放在开头的，可以理解为为某个语法成分“兜底”？
+
+譬如：`Stmt → error SEMI`，我这个`Stmt`确实是出错了，错哪里我是不知道，但在后续的分析中你得把我看成是`Stmt`！
+
+是不是可以这样理解：
+
+```
+某状态：
+StmtList → Stmt •StmtList
+StmtList → •Stmt StmtList
+Stmt → •error SEMI
+```
+
+开头是`error`，代表着其左部是在另外一个产生式右部的某个部分的。
+
+产生式最后 能不能是`error`呢？如果产生式最后是`error`，意味着不管下面是啥字符，直接进行规约。譬如：
+
+```
+Exp LB error %prec LOW_PRIORITY {yyerror("Missing \"]\""); yyerrok;}
+Exp LB error RB {yyerror("Wrong in Expression."); yyerrok;}
+```
+
+对于`a[=]`，读到`=`时出错。因为引起`error`的语法单元（`=`）还没有“移入”，只是“读到”了。当`error`入栈后，读到的还是引起`error`的语法单元（`=`），并不是`RB`，所以直接规约了，即便后面是有`RB`的。
+
+从`Exp`开始搞起。牢记：`error`代表了出错的语法成分，是我们想要“跳过”的语法成分。
