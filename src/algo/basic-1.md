@@ -390,7 +390,7 @@ int main(){
     vector<int> A, B;
     
     cin >> a >> b; //a="123456"
-    for(int i=a.size() - 1; i>=0; i--) A.push_back(a[i] - '0');//倒序插数字，A = [6, 5, 4, 3, 2, 1]；要是我可能会用atoi，没想到对于单个数字，与'0'做差便是结果
+    for(int i=a.size() - 1; i>=0; i--) A.push_back(a[i] - '0');//字符串的最后一位是最低位，所以需要放到数组的0位置。push_back每次都是往最后一个元素后面追加元素。若a="123456"，则A = [6, 5, 4, 3, 2, 1]；要是我可能会用atoi，没想到对于单个数字，与'0'做差便是结果。同时注意，我们不能直接用A[x]=xx，否则会报段错误。只能通过push_back向其中添加完元素后，才能使用A[x]访问相关元素。
     for(int i=b.size() - 1; i>=0; i--) B.push_back(b[i] - '0');
     
     auto C = add(A, B);//注意auto的使用，更短
@@ -427,7 +427,7 @@ int main(){
 1. 如果$A、B$的**位数不同**，那么返回`A.size() > B.size()`（谁位数长，谁更大）；
 2. 如果$A、B$的**位数相同**，那么从高位开始，依次比较每一位，直至遇到某位`A[i]`、`B[i]`不同，返回`A[i] > B[i]`。
 
-### 模板
+#### 模板
 
 ```cpp
 //判断A是不是大于等于B
@@ -445,8 +445,8 @@ vector<int> sub(vector<int> &A, vector<int> &B){
     vector<int> C;
     for(int i=0, t=0; i<A.size(); i++){
         t = A[i] - t;
-        if(i < B.size()) t -= B[i];
-        C.push_back((t+10)%10);
+        if(i < B.size()) t -= B[i]; //检查是不是越界了
+        C.push_back((t+10)%10); //将t<0和t>=0的情况结合在一起
         if(t < 0) t=1;else t=0;
     }
     //最后还要记得去掉前导0呀
@@ -477,5 +477,86 @@ int main(){
 }
 ```
 
+### 大整数乘小整数
 
+#### 基本思想
+
+> 注意：对于大整数乘法而言，其中一个乘数是相对较小的。
+>
+> （一个大整数乘上一个小整数$A \times b$，其中$len(A) \leqslant 10^6, b \leqslant 1000$）
+>
+> 此时，**$b$为一个整体**（也就是直接用`int`表示）。
+
+如果是手算，那么应该是下面这个样子...
+
+```
+   a2 a1 a0
+   1  2  3
+x     1  2 ==> 乘数b
+----------- 
+   2  4  6
+1  2  3
+-----------
+1  4  7  6
+C3 C2 C1 C0
+```
+
+也就是说，最终的乘法结果应该是$(a_0 \times b + a_1 \times 10 \times b + a2 \times 100 \times b)$。但是！在大整数乘小整数时，我们的目标是**直接**获取到**每一位**的结果。因而要作出一些**看似不符合常规**的操作：
+
+但是对于大整数乘小整数，我们这样算：
+
+$C_0=(a_0\times b) \% 10$，进位$t_1=\lfloor \frac{(a_0\times b)}{10} \rfloor$；
+
+$C_1=(a_1\times b + t_1) \% 10$，进位$t_2=\lfloor \frac{(a_1\times b + t_1)}{10} \rfloor$；
+
+$C_2=(a_2\times b + t_2) \% 10$，进位$t_3=\lfloor \frac{(a_2\times b + t_2)}{10} \rfloor$；
+
+$C_3=t_3$.
+
+> 模10得位，除10得进位
+
+看上去挺奇怪的，但确实是对的。下面来分析分析：如果正常给定一个数字$n$，让我们去提取个位、百位、千位等，我们的做法是先除10再模10，如下方代码片段所示：
+
+```c
+int c0 = n % 10;
+int c1 = (n / 10) % 10;
+int c2 = (n / 100) % 10;
+int c3 = (n / 1000) % 10;
+```
+
+但我们的$n$是**大整数**，只能表示成$n = (a_0 \times b + a_1 \times 10 \times b + a2 \times 100 \times b)$。代入到上面的代码中，我们发现：
+
+$C_0 = ({\color[RGB]{0, 240, 0} a_0 \times b} + {\color[RGB]{240, 0, 0} a_1 \times 10 \times b + a2 \times 100 \times b}) \% 10 = ({\color[RGB]{0, 240, 0} a_0 \times b}) \% 10$（因为${\color[RGB]{240, 0, 0} a_1 \times 10 \times b + a2 \times 100 \times b}$都是10的倍数，所以对$n$模10时，与它们无关）
+
+$C_1 = (({\color[RGB]{0, 240, 0} a_0 \times b + a_1 \times 10 \times b} + {\color[RGB]{240, 0, 0}  a2 \times 100 \times b}) \div 10) \% 10 = (({\color[RGB]{0, 240, 0} a_0 \times b + a_1 \times 10 \times b}) \div 10) \% 10 = (\lfloor \frac{a_0 \times b}{10} \rfloor + a_1 \times b) \% 10$（因为${\color[RGB]{240, 0, 0} a2 \times 100 \times b}$是100的倍数，所以对$n$除10再模10时，与它无关）
+
+此时注意到$C_1=({\color[RGB]{0, 240, 0} \lfloor \frac{a_0 \times b}{10} \rfloor} + a_1 \times b) \% 10$，和我们上面直接给出的$C_1=(a_1\times b + {\color[RGB]{0, 240, 0} t_1}) \% 10$是一致的了！至于$C_2， C_3$可以采用同样的办法处理。
+
+#### 模板
+
+```c
+#include <iostream>
+#include <vector>
+
+vector<int> mul (vector<int> A, int b){
+    
+}
+
+
+int main(){
+    string a;
+    int b;
+    
+    cin >> a >> b;
+    
+    vector<int> A;
+    for(int i=a.size()-1; i>=0; i--) A.push_back(a[i] - '0');
+    
+    auto C = mul(A, b);
+    
+    for(int i=C.size()-1; i>=0; i--) printf("%d", C[i]);
+    
+    return 0;
+}
+```
 
