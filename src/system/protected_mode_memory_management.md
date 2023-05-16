@@ -138,6 +138,12 @@ IA-32架构支持的分段机制可用于实现各种各样的系统设计。这
 - `L (64-bit code segment) flag`：IA32-e模式特有的标志。
 - `Available and reserved bits`：段描述符的第二个双字的第 20 位可供系统软件使用。
 
+关于`Type`字段，作如下补充：
+
+![type_s_1](./protected_mode_memory_management.assets/type_s_1.png)
+
+![type_s_2](./protected_mode_memory_management.assets/type_s_2.png)
+
 ### 将逻辑地址转换为线性地址
 
 处理器通过如下几个步骤将逻辑地址转换为线性地址：
