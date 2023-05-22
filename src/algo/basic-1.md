@@ -429,7 +429,7 @@ int main(){
 
 #### 模板
 
-```cpp
+```c++
 //判断A是不是大于等于B
 bool cmp(vector<int> &A, vector<int> &B){
     if(A.size() != B.size()) return A.size() > B.size();//谁位数长，谁更大
@@ -513,7 +513,9 @@ $C_2=(a_2\times b + t_2) \% 10$，进位$t_3=\lfloor \frac{(a_2\times b + t_2)}{
 
 $C_3=t_3$.
 
-> 模10得位，除10得进位
+> 主旨思想：**模10得位，除10得进位**。
+>
+> 虽然这里看上去很奇怪，但是一看模板就豁然开朗了...
 
 看上去挺奇怪的，但确实是对的。下面来分析分析：如果正常给定一个数字$n$，让我们去提取个位、百位、千位等，我们的做法是先除10再模10，如下方代码片段所示：
 
@@ -526,20 +528,36 @@ int c3 = (n / 1000) % 10;
 
 但我们的$n$是**大整数**，只能表示成$n = (a_0 \times b + a_1 \times 10 \times b + a2 \times 100 \times b)$。代入到上面的代码中，我们发现：
 
-$C_0 = ({\color[RGB]{0, 240, 0} a_0 \times b} + {\color[RGB]{240, 0, 0} a_1 \times 10 \times b + a2 \times 100 \times b}) \% 10 = ({\color[RGB]{0, 240, 0} a_0 \times b}) \% 10$（因为${\color[RGB]{240, 0, 0} a_1 \times 10 \times b + a2 \times 100 \times b}$都是10的倍数，所以对$n$模10时，与它们无关）
+$C_0 = ({\color{green} a_0 \times b} + {\color{red} a_1 \times 10 \times b + a2 \times 100 \times b}) \% 10 = ({\color{green} a_0 \times b}) \% 10$（因为${\color{red} a_1 \times 10 \times b + a2 \times 100 \times b}$都是10的倍数，所以对$n$模10时，与它们无关）
 
-$C_1 = (({\color[RGB]{0, 240, 0} a_0 \times b + a_1 \times 10 \times b} + {\color[RGB]{240, 0, 0}  a2 \times 100 \times b}) \div 10) \% 10 = (({\color[RGB]{0, 240, 0} a_0 \times b + a_1 \times 10 \times b}) \div 10) \% 10 = (\lfloor \frac{a_0 \times b}{10} \rfloor + a_1 \times b) \% 10$（因为${\color[RGB]{240, 0, 0} a2 \times 100 \times b}$是100的倍数，所以对$n$除10再模10时，与它无关）
+$C_1 = (({\color{green} a_0 \times b + a_1 \times 10 \times b} + {\color{red}  a2 \times 100 \times b}) \div 10) \% 10 = (({\color{green} a_0 \times b + a_1 \times 10 \times b}) \div 10) \% 10 = (\lfloor \frac{a_0 \times b}{10} \rfloor + a_1 \times b) \% 10$（因为${\color{red} a2 \times 100 \times b}$是100的倍数，所以对$n$除10再模10时，与它无关）
 
-此时注意到$C_1=({\color[RGB]{0, 240, 0} \lfloor \frac{a_0 \times b}{10} \rfloor} + a_1 \times b) \% 10$，和我们上面直接给出的$C_1=(a_1\times b + {\color[RGB]{0, 240, 0} t_1}) \% 10$是一致的了！至于$C_2， C_3$可以采用同样的办法处理。
+此时注意到$C_1=({\color{green} \lfloor \frac{a_0 \times b}{10} \rfloor} + a_1 \times b) \% 10$，和我们上面直接给出的$C_1=(a_1\times b + {\color{green} t_1}) \% 10$是一致的了！至于$C_2， C_3$可以采用同样的办法处理。
 
 #### 模板
+
+> 易错点：`for`循环里面条件有`|| t`；对应的要在循环开头判断当前`i`是不是小于`A.size()`再决定是不是要加`A[i]`。
 
 ```c
 #include <iostream>
 #include <vector>
 
-vector<int> mul (vector<int> A, int b){
+using namespace std;
+
+vector<int> mul (vector<int> &A, int b){ //记得A要传引用
+    vector<int> C;
     
+    int t=0; //存储进位
+    for(int i = 0; i<A.size() || t; i++){ //或上t，防止将A[i]每一位都和b乘完之后，还剩进位没有处理...
+        if(i<A.size()) t += A[i] * b;
+        C.push_back(t % 10); //模10得位
+        t = t / 10; //除10得进位
+    }
+    
+    //最后还需要删掉前导0，例如12345*0，否则就会出现5个0.
+    while(C.size() > 1 && C.back() == 0) C.pop_back();
+    
+    return C;
 }
 
 
@@ -556,6 +574,94 @@ int main(){
     
     for(int i=C.size()-1; i>=0; i--) printf("%d", C[i]);
     
+    return 0;
+}
+```
+
+### 大整数除小整数
+
+#### 基本思想
+
+如果是手算的话，我们大抵会这么算：
+
+```
+       C3 C2 C1 C0
+       0  1  1  2
+     ---------------
+     ) A3 A2 A1 A0
+ 1 1 ) 1  2  3  4
+       0
+     ----------
+     (r')
+       1  2   
+       1  1
+     ----------
+        (r'')
+          1  3
+          1  1
+          ----------
+           (r''')
+             2  4  
+             2  2
+             -----
+                2 
+```
+
+对上面的过程进行抽象（1234对应$A_3A_2A_1A_0$，相除结果0112对应$C_3C_2C_1C_0$）：
+
+1. 用$A_3$除上小整数$b$（$1 \div 11$），得到0；然后用$A_3 - A_3 \times b$（事实上就是$\mod{b}$）得到$r'=1$；
+2. $r'\times 10 + A_2$（即$1 \times 10 + 2$），得到第二轮被除数12；
+3. 用第二轮被除数$r'\times 10 + A_2$去除以$b$（$12 \div 11$），得到1；然后用第二轮被除数减去这一步的商乘余数$(r'\times 10 + A_2) - ((r'\times 10 + A_2) \div b)\times b$（即$12 - (1 \times 11)$）（事实上就是$\mod{b}$），得到$r'' = 1$；
+4. $r'' \times 10 + A_1$（即$1 \times 10 + 3$），得到第二轮被除数13；
+5. ....
+
+从上述过程中，不难看出，$r\times 10 + A_i$以及其模$b$的结果$(r\times 10 + A_i) \mod{b}$是运算中的关键，这一点也会在模板中体现出来。
+
+#### 模板
+
+> 易错点：`for`循环中，从数字最高位（即数组索引大的元素）开始遍历，初始条件为`int i = A.size() - 1`
+
+```c++
+#include <iostream>
+#include <vector>
+#include <algorithm>
+//使用reverse函数要引入算法库
+
+using namespace std;
+
+vector<int> div (vector<int> &A, int b, int &r){ //记得A要传引用，这里r也是传的引用喵！
+	vector<int> C;
+    
+    int r=0;
+    for(int i=A.size()-1; i>=0; i--){ //毕竟是从最高位开始除
+        r = r*10 + A[i];
+        C.push_back(r / b);
+        r %= b;
+    }
+    //此时出来的C，最高位在最前头，而下方打印时从vector最后一个元素开始打
+    //所以要反转一下
+    reverse(C.begin(), C.end());
+    //去掉前导0
+    while(C.size() > 1 && C.back() == 0) C.pop_back();
+    
+    return C;
+}
+
+
+int main(){
+    string a;
+    int b;
+    
+    cin >> a >> b;
+    
+    vector<int> A;
+    for(int i=a.size()-1; i>=0; i--) A.push_back(a[i] - '0');
+    
+    int r; //用于存储余数
+    auto C = div(A, b, r);
+    
+    for(int i=C.size()-1; i>=0; i--) printf("%d", C[i]);
+    cout << endl << r; //不要忘记换行输出余数
     return 0;
 }
 ```
