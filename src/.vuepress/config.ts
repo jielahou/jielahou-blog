@@ -23,4 +23,12 @@ export default defineUserConfig({
   ],
 
   shouldPrefetch: false,
+  head: [[
+    "script",
+      {
+        charset: "UTF-8",
+        id: "LA_COLLECT",
+        src: "//sdk.51.la/js-sdk-pro.min.js?id=KDeTDcfevxjOrgMS&ck=KDeTDcfevxjOrgMS",
+      },
+  ]]
 });
