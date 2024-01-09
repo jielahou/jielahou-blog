@@ -359,3 +359,18 @@ BaseAddress + width * ty + tx
   - 不使用高精度除法
 - and code compiled with `-prec-sqrt=false` (less precise square root) tends to have higher performance than code compiled with `-prec-sqrt=true`. The nvcc user manual describes these compilation flags in more details.
   - 不使用高精度平方根
+
+可使用如下的API：
+
+单精度浮点除法：`__fdividef(x, y)`
+
+单精度浮点倒数平方根： optimize `1.0/sqrtf()` into `rsqrtf()`
+
+单精度浮点平方根：（没琢磨透啥意思）Single-precision floating-point square root is implemented as a reciprocal square root followed by a reciprocal instead of a reciprocal square root followed by a multiplication so that it gives correct results for 0 and infinity.
+
+三角函数（`sin`、`cos`等）`sinf(x)`, `cosf(x)`, `tanf(x)`, `sincosf(x)`, and corresponding double-precision instructions开销更大，尤其是当`x`非常大时。`the argument reduction code`提供了两条路：一条快路和一条慢路。快速路径用于数量级足够小的参数，主要包括一些乘加运算。慢运算路径用于量级较大的参数，包括在整个参数范围内获得正确结果所需的冗长计算。目前，三角函数的`the argument reduction code`会为幅度小于 `105615.0f `的参数（单精度函数）和小于 `2147483648.0` 的参数（双精度函数）选择快速路径。由于慢速路径比快速路径需要更多的寄存器，因此尝试将一些中间变量存储在本地内存中，以减少慢速路径中的寄存器压力，但由于本地内存的高延迟和带宽可能会影响性能（参见[设备内存访问](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses)）【更多请参考原文】。
+
+整数运算：**整数除法和取模的开销非常大**！尽量**使用位运算代替**！（例如：If `n` is a power of 2, (`i/n`) is equivalent to `(i>>log2(n))` and `(i%n)` is equivalent to (`i&(n-1)`); the compiler will perform these conversions if `n` is literal.）
+
+
+
