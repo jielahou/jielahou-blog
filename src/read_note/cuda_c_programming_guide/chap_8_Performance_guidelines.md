@@ -368,9 +368,28 @@ BaseAddress + width * ty + tx
 
 单精度浮点平方根：（没琢磨透啥意思）Single-precision floating-point square root is implemented as a reciprocal square root followed by a reciprocal instead of a reciprocal square root followed by a multiplication so that it gives correct results for 0 and infinity.
 
-三角函数（`sin`、`cos`等）`sinf(x)`, `cosf(x)`, `tanf(x)`, `sincosf(x)`, and corresponding double-precision instructions开销更大，尤其是当`x`非常大时。`the argument reduction code`提供了两条路：一条快路和一条慢路。快速路径用于数量级足够小的参数，主要包括一些乘加运算。慢运算路径用于量级较大的参数，包括在整个参数范围内获得正确结果所需的冗长计算。目前，三角函数的`the argument reduction code`会为幅度小于 `105615.0f `的参数（单精度函数）和小于 `2147483648.0` 的参数（双精度函数）选择快速路径。由于慢速路径比快速路径需要更多的寄存器，因此尝试将一些中间变量存储在本地内存中，以减少慢速路径中的寄存器压力，但由于本地内存的高延迟和带宽可能会影响性能（参见[设备内存访问](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses)）【更多请参考原文】。
+**三角函数**（`sin`、`cos`等）`sinf(x)`, `cosf(x)`, `tanf(x)`, `sincosf(x)`, and corresponding double-precision instructions开销更大，尤其是当`x`非常大时。`the argument reduction code`提供了两条路：一条快路和一条慢路。快速路径用于数量级足够小的参数，主要包括一些乘加运算。慢运算路径用于量级较大的参数，包括在整个参数范围内获得正确结果所需的冗长计算。目前，三角函数的`the argument reduction code`会为幅度小于 `105615.0f `的参数（单精度函数）和小于 `2147483648.0` 的参数（双精度函数）选择快速路径。由于慢速路径比快速路径需要更多的寄存器，因此尝试将一些中间变量存储在本地内存中，以减少慢速路径中的寄存器压力，但由于本地内存的高延迟和带宽可能会影响性能（参见[设备内存访问](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses)）【更多请参考原文】。
 
-整数运算：**整数除法和取模的开销非常大**！尽量**使用位运算代替**！（例如：If `n` is a power of 2, (`i/n`) is equivalent to `(i>>log2(n))` and `(i%n)` is equivalent to (`i&(n-1)`); the compiler will perform these conversions if `n` is literal.）
+**整数运算**：**整数除法和取模的开销非常大**！尽量**使用位运算代替**！（例如：If `n` is a power of 2, (`i/n`) is equivalent to `(i>>log2(n))` and `(i%n)` is equivalent to (`i&(n-1)`); the compiler will perform these conversions if `n` is literal.）
+
+**半精度（Half Precision）运算**：大体思想是：**可以把两个16位拼成32位**（`half2` datatype is used for `half` precision and `__nv_bfloat162` be used for `__nv_bfloat16` precision），**然后调用一次向量函数完成两个16位的运算**（Vector intrinsics (for example, `__hadd2`, `__hsub2`, `__hmul2`, `__hfma2`) can then be used to do two operations in a single instruction.）。同时还提供了一些助手函数，能够把两个半精度的浮点值转换成`half2`、`__nv_bfloat162`（`__halves2half2`、`__halves2bfloat162`）
+
+**类型转换**：类型转换会**引入额外的指令、额外的时钟周期**（，所以要**尽量避免类型转换**）。啥时候会发生类型转换呢？
+
+- 对`char`或`short`类型做运算：实际上会先把他们转换成`int`再运算
+- 双精度常量被用于做单精度运算时，会将双精度常量再转为单精度。我们可以在**小数后面加一个`f`**将其声明为单精度常量，例如`3.1415926f`
 
 
+
+:::info 小结
+
+1. 使用`__restrict__`指针
+2. 控制编译标志，不用高精度运算
+3. 使用由SFU运算的系列函数
+4. 多多使用位运算
+5. 合并半精度运算，使用向量运算函数
+6. 不使用`char`、`short`
+7. 做单精度运算，字面值常量后面带上`f`
+
+:::
 
