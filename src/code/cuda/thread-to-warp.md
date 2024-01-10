@@ -2,6 +2,8 @@
 title: Thread如何划分为Warp?
 ---
 
+> 我们知道，在优化CUDA程序时，以Warp的视角去分析是很重要的。但是，（笔者在琢磨这个问题之前）只知道一个Warp中有32个线程，但是不知道（对于二维blockDim来说）究竟是哪32个线程划分到一个Warp中，写代码时心里也就没有谱。近来阅读[CUDA C Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)，突然发现了问题的解，在此记录。
+
 先看这里（https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#simt-architecture）的一句话：
 
 > When a multiprocessor is given one or more thread blocks to execute, it partitions them into warps and each warp gets scheduled by a *warp scheduler* for execution. The way a block is partitioned into warps is always the same; each warp contains threads of consecutive, increasing thread IDs with the first warp containing thread 0. Thread Hierarchy describes how thread IDs relate to thread indices in the block. 
