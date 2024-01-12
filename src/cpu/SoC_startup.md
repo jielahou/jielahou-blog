@@ -656,6 +656,48 @@ CONFIG_DEBUG_UART_SHIFT=2
 
 
 
+## SD卡
+
+> 一个比较大的问题是，读取速度太慢了，`ls`一下都得等1~2分钟（一度以为是卡死了，其实就是单纯的慢）
+>
+> 怀疑是频率拉的不够高，可以尝试拉高频率。
+
+需要自行准备提供**3.3V** SPI接口的SD读写模块，某宝可以购买，一般在10元以内（不算到尔滨的邮费）可以搞到一个。
+
+![screenshot_20240112154840](./SoC_startup.assets/screenshot_20240112154840.png)
+
+![screenshot_20240112154957](./SoC_startup.assets/screenshot_20240112154957.png)
+
+可以使用`AXI QUAD SPI`IP实现以AXI总线操作SD卡，且该IP有配套的Linux驱动。配置如下：
+
+![screenshot_20240112152159](./SoC_startup.assets/screenshot_20240112152159.png)
+
+设备树编写（参考）：
+
+```
+axi_quad_spi: spi@1fe80000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "xlnx,xps-spi-2.00.a";
+			interrupt-parent = <&axi_intc_0>;
+			interrupts = <2>;
+			reg = <0x1fe80000 0x10000>;
+			xlnx,num-ss-bits = <0x1>;
+			num-cs = <0x1>;
+			fifo-size = <16>;
+
+			sd1@0 {
+				reg = <0>;
+				status = "okay";
+				compatible = "mmc-spi-slot";
+				spi-max-frequency = <25000000>;
+			};
+
+		};
+```
+
+
+
 
 
 # 编写裸机程序
