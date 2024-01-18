@@ -336,7 +336,9 @@ BaseAddress + width * ty + tx
 
 ## 最大化指令吞吐量
 
-欲最大化指令吞吐量，我们应该这么做：
+### 算数指令
+
+欲最大化指令吞吐量，对于算数指令相关，我们应该这么做：
 
 - **Minimize the use of arithmetic instructions with low throughput;** this includes trading precision for speed when it does not affect the end result, such as **using intrinsic instead of regular functions (intrinsic functions are listed in [Intrinsic Functions](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#intrinsic-functions)), single-precision instead of double-precision, or flushing denormalized numbers to zero;**
   - 不要使用吞吐量低的算数指令，可以用：
@@ -379,8 +381,6 @@ BaseAddress + width * ty + tx
 - 对`char`或`short`类型做运算：实际上会先把他们转换成`int`再运算
 - 双精度常量被用于做单精度运算时，会将双精度常量再转为单精度。我们可以在**小数后面加一个`f`**将其声明为单精度常量，例如`3.1415926f`
 
-
-
 :::info 小结
 
 1. 使用`__restrict__`指针
@@ -393,3 +393,56 @@ BaseAddress + width * ty + tx
 
 :::
 
+
+
+### 控制流指令
+
+尽量不要让一个Warp中的线程产生分支（指产生不同的执行路径，例如`if`、`switch`、`do`、`for`、`while`等）。如果出现这种情况，就必须以序列化方式执行各路径，从而增加该线程束执行的指令总数。
+
+**当控制条件和`threadIdx`相关时**，我们可以精心编排，以减少Warp内线程的分支。例如：如果某个分支条件仅和`threadIdx.x / warpSize`（`warpSize == 32`，即一个Warp中的Thread个数），那么同一Warp中的线程就不会产生分支。
+
+对于**循环**，我们可以对其进行**展开**。可以使用`#pragma unroll`来指导编译器进行循环展开。
+
+我们还可以使用**谓词**来优化短的`if`或`switch`块。使用**分支谓词**时，那些取决于控制条件的指令都会被执行（甭管对应谓词寄存器是真是假。对应谓词寄存器值还没出来呢都可能会执行。）。相反，每条指令都与每个线程的条件代码或谓词相关联，谓词会根据控制条件设置为真或假，**虽然每条指令都会被安排执行**，但**只有谓词为真的指令才会被实际执行**。带有**假谓词的指令不会写入结果**，也不会评估地址或读取操作数。由此，我们可以**消除分支**（毕竟甭管是真是假，指令都会执行，只不过最后的结果是写入还是不写入罢了）。
+
+:::info 例子
+
+李少侠的SGEMM实现中，借助内嵌汇编使用分支谓词的例子：
+
+```c++
+__device__ __forceinline__ void stg32(const float &reg, void *ptr, bool guard) {
+    asm volatile (
+        "{.reg .pred p;\n"
+        " setp.ne.b32 p, %2, 0;\n"
+        " @p st.global.f32 [%0], %1;}\n"
+        : : "l"(ptr), "f"(reg), "r"((int)guard)
+    );
+}
+```
+
+:::
+
+
+
+:::info 个人想法
+
+依我个人理解和从老师那里听来的信息，Nvidia GPU对`@p`和`bra`的处理方式是不同的。
+
+**以下内容暂无官方资料佐证，仅供参考！**
+
+对于使用了保护掩码`@p`的语句：
+
+- 可以不用等`p`的结果出来，就去执行带`@p`的语句
+- **Warp中所有线程** **都会去执行**带`@p`的语句
+
+- - 所以**不存在分支**问题
+  - 虽然最终的行为像分支（**似乎是**有的执行了，有的没有执行）
+
+- 待`p`中结果出来后，各个线程根据`p`的结果，来决定是抛弃掉执行结果，还是保留执行结果，写入对应的存储器
+
+对于`bra`指令：
+
+- 对于老版本的GPGPU实现，使用SIMT堆栈/活跃掩码等技术实现。由于那时的英伟达GPU，一个Warp32个线程共用1个PC寄存器，所以对于这种方案，一个Warp中但凡出现了分支，不同的分支流是不并行的（必须等一个分支执行完，才能去执行另外一个分支）
+- 但对于新版本的GPGPU，Warp中每个线程都有自己的状态相关寄存器。所以在出现分支时，走不同分支的线程是可以并行的
+
+:::
