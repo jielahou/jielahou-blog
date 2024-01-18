@@ -446,3 +446,31 @@ __device__ __forceinline__ void stg32(const float &reg, void *ptr, bool guard) {
 - 但对于新版本的GPGPU，Warp中每个线程都有自己的状态相关寄存器。所以在出现分支时，走不同分支的线程是可以并行的
 
 :::
+
+### 同步指令
+
+对于计算能力为 6.0 的设备，`__syncthreads()` 的吞吐量为每个时钟周期 32 个操作；对于计算能力为 7.x 和 8.x 的设备，吞吐量为每个时钟周期 16 个操作；对于计算能力为 5.x、6.1 和 6.2 的设备，吞吐量为每个时钟周期 64 个操作。
+
+Note that `__syncthreads()` can impact performance by forcing the multiprocessor to idle as detailed in [Device Memory Accesses](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses).
+
+## 内存抖动
+
+应用程序若经常分配和释放内存，随着时间的推移，分配调用的速度往往会变慢，直至一个临界值。这通常是由于被释放的内存会被操作系统去使用。为了在这方面获得最佳性能，我们建议采用以下方法：
+
+- **用多少分配多少**，别分配的太大
+- 早开空间，**少调用`cudaMalloc`和`cudaFree`**
+- 如果应用程序**无法分配足够的*设备*内存**，可以考虑退而求其次**使用其他内存类型**，如 `cudaMallocHost` 或 `cudaMallocManaged`，它们的性能可能不如 `cudaMallocHost` 或 `cudaMallocManaged`，但起码能让程序跑起来
+- （对于支持本条中所涉及特性的平台）**可以先申请的多一点，并且不会一直真·占着内存**。具体说来，就是使用`cudaMallocManaged`+正确的` cudaMemAdvise` 策略；这将允许应用程序保留 `cudaMalloc`的大部分（如果不是全部）性能。不会去强制分配驻留，只会在确实需要使用、需要被预取的时候再去分配；从而减轻了操作系统调度程序的整体压力，更好地支持多网络使用案例。
+  - For platforms that support the feature, cudaMallocManaged allows for oversubscription, and with the correct cudaMemAdvise policies enabled, will allow the application to retain most if not all the performance of cudaMalloc. cudaMallocManaged also won’t force an allocation to be resident until it is needed or prefetched, reducing the overall pressure on the operating system schedulers and better enabling multi-tenet use cases.
+
+:::info 关于`cudaMallocManaged`
+
+Ref：[Unified Memory in CUDA 6 | NVIDIA Technical Blog](https://developer.nvidia.com/blog/unified-memory-in-cuda-6/)
+
+使用`cudaMallocManaged`，即使用了统一内存（Unified Memory）。
+
+统一内存和统一虚拟内存的区别在于：统一内存会**自动做数据的迁移**（比如：从主机内存到设备显存；在主机端，我们使用统一内存的指针进行操作；在设备端，可以使用同一个指针进行访问，但此时数据可能已从主机端复制到了设备端），而统一虚拟内存不会（给定指针，要么在设备上，要么在主机上；若数据在主机内存上，则访问起来会非常慢）。
+
+统一内存最大的好处是：可以使我们**更方便地使用在主机上声明的各类结构体**。何为更方便？**不用我们考虑在从主机到设备深拷贝时涉及到的一系列问题**。例如：如果主机上某结构体含有一个字符串指针，那么当从主机到设备传送这个结构体时，不仅要把对应字符串复制过来，还要将指针改为设备端指针。但如果使用统一内存，就不用我们管这些事了，会自动地做转换、自动地将数据从主机内存搬到设备显存。
+
+:::
